@@ -1,14 +1,19 @@
-import dotenv from "dotenv";
+import "reflect-metadata";
 import { DataSource } from "typeorm";
-import { User } from "../entities/User";
-import { Session } from "../entities/Session";
-dotenv.config(); 
+
+const isProd = process.env.NODE_ENV === "production";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
   url: process.env.DATABASE_URL,
-  synchronize: false, // ⚠️ NO usar true en producción
+  synchronize: false,
   logging: false,
-  entities: [User, Session],
-  migrations: ["src/migrations/*.ts"],
+
+  entities: isProd
+    ? ["dist/entities/*.js"]
+    : ["src/entities/*.ts"],
+
+  migrations: isProd
+    ? ["dist/migrations/*.js"]
+    : ["src/migrations/*.ts"],
 });
