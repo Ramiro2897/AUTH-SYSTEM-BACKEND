@@ -1,26 +1,21 @@
-import express from "express";
-import rateLimit from "express-rate-limit";
-
-const app = express();
-app.set("trust proxy", 1); // confía en el proxy de Render
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+import type { Request } from "express";
 
 export const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10,                   // máximo 10 intentos por IP
-  keyGenerator: (req) => {
-  const xf = req.headers["x-forwarded-for"];
-  if (xf && typeof xf === "string") {
-    return xf.split(",")[0].trim();
-  }
-  // fuerza que sea string aunque req.ip sea undefined
-  return String(req.ip ?? "unknown");
-},
-  message: {
-    errors: {
-      general: "Demasiados intentos, prueba más tarde."
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 10,
+  keyGenerator: (req: Request) => {
+    const xf = req.headers["x-forwarded-for"];
+    if (xf && typeof xf === "string") {
+      // toma la primera IP de la cabecera
+      return ipKeyGenerator({ ip: xf.split(",")[0].trim() } as any);
     }
+    // si no hay X-Forwarded-For, usa req.ip forzado a string
+    return ipKeyGenerator({ ip: String(req.ip ?? "unknown") } as any);
+  },
+  message: {
+    errors: { general: "Demasiados intentos, prueba más tarde." }
   },
   standardHeaders: true,
   legacyHeaders: false,
 });
-
