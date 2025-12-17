@@ -7,9 +7,13 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-  origin: "http://localhost:5173", // frontend URL
+  origin: [
+    "http://localhost:5173", // frontend local
+    "https://auth-system-frontend-beige.vercel.app" // frontend en Vercel
+  ],
   credentials: true, // permite cookies
 }));
+
 app.use(express.json());
 app.use(cookieParser());
 
