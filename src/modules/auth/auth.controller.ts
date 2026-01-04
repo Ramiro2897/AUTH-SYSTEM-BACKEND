@@ -8,6 +8,8 @@ import {
 import { setSessionCookie } from "../../utils/cookies";
 import { getUserFromSession } from "./auth.service";
 import { Session } from "../../entities/Session";
+import { loginAttempts } from "../../middlewares/rateLimiter";
+
 
 // =====================
 // LOGIN
@@ -15,7 +17,7 @@ import { Session } from "../../entities/Session";
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    console.log("llegaron los datos", email, password);
+    console.log("llegaron los datos", email);
 
     if (!email || !password) {
       return res.status(400).json({
@@ -25,19 +27,36 @@ export const login = async (req: Request, res: Response) => {
 
     const user = await loginService(email, password);
 
+    // ❌ LOGIN FALLIDO
     if (!user) {
-      console.log('aquiiiiii')
+      const record = loginAttempts.get(email);
+
+      if (record) {
+        record.count += 1;
+      } else {
+        loginAttempts.set(email, {
+          count: 1,
+          firstAttempt: Date.now(),
+        });
+      }
+
+      console.log("❌ Login fallido:", email);
+
       return res.status(401).json({
         errors: { general: "Credenciales inválidas" },
       });
     }
 
-    // ✅ crear sesión
+    // ✅ LOGIN EXITOSO → resetear intentos
+    loginAttempts.delete(email);
+
+    // crear sesión
     const session = await createSession(user.id);
 
-    // ✅ setear cookie httpOnly
+    // setear cookie
     setSessionCookie(res, session.refreshToken);
-    console.log("✅ [LOGIN] Login exitoso");
+
+    console.log("✅ [LOGIN] Login exitoso:", email);
 
     return res.json({
       message: "Login exitoso",
