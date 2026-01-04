@@ -1,4 +1,4 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import type { Request } from "express";
 
 export const loginLimiter = rateLimit({
@@ -6,13 +6,12 @@ export const loginLimiter = rateLimit({
   max: 10,
   keyGenerator: (req: Request) => {
     const email = req.body?.email ?? "unknown";
-    const key = `${req.ip}:${email}`;
 
-    // console.log("🧩 RATE LIMIT KEY:", key);
-    // console.log("📡 IP:", req.ip);
-    // console.log("📨 XFF:", req.headers["x-forwarded-for"]);
+    // ✅ pasar string, no Request
+    const ip = req.ip ?? "unknown";
+    const ipKey = ipKeyGenerator(ip);
 
-    return key;
+    return `${ipKey}:${email}`;
   },
   message: {
     errors: { general: "Demasiados intentos, prueba más tarde." },
@@ -20,4 +19,3 @@ export const loginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-
