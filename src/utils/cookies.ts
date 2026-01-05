@@ -1,13 +1,11 @@
 import { Response } from "express";
 
-export const setSessionCookie = (
-  res: Response,
-  token: string
-) => {
+export const setSessionCookie = (res: Response, token: string) => {
   res.cookie("session", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: true,        // 🔥 SIEMPRE true en prod
+    sameSite: "none",    // 🔥 CLAVE para Vercel + Render
+    path: "/",
     maxAge: 1000 * 60 * 60 * 24 * 7,
   });
 };
